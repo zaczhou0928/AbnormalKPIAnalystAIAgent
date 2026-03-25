@@ -1,4 +1,4 @@
-.PHONY: install seed app run-case eval test clean
+.PHONY: install seed app run-case eval demo test clean
 
 install:
 	pip install -e ".[dev]"
@@ -14,6 +14,9 @@ run-case:
 
 eval:
 	python -m agentic_kpi_analyst.cli eval
+
+demo:
+	python -m agentic_kpi_analyst.cli demo
 
 test:
 	pytest -v

@@ -62,6 +62,21 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"  Avg runtime: {summary.avg_runtime_seconds:.1f}s")
 
 
+def cmd_demo(args: argparse.Namespace) -> None:
+    """Generate reproducible demo artifacts for representative cases."""
+    from agentic_kpi_analyst.demo import run_demo
+
+    demo_dir = run_demo()
+    print(f"\nDemo artifacts saved to {demo_dir}/")
+    print("  Contents:")
+    for child in sorted(demo_dir.iterdir()):
+        if child.is_dir():
+            n_files = sum(1 for _ in child.rglob("*") if _.is_file())
+            print(f"    {child.name}/ ({n_files} files)")
+        else:
+            print(f"    {child.name}")
+
+
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -85,6 +100,9 @@ def main() -> None:
     # eval
     subparsers.add_parser("eval", help="Run evaluation pipeline", parents=[common])
 
+    # demo
+    subparsers.add_parser("demo", help="Generate demo artifacts for representative cases", parents=[common])
+
     args = parser.parse_args()
     setup_logging(args.log_level)
 
@@ -94,6 +112,8 @@ def main() -> None:
         cmd_run_case(args)
     elif args.command == "eval":
         cmd_eval(args)
+    elif args.command == "demo":
+        cmd_demo(args)
     else:
         parser.print_help()
 
