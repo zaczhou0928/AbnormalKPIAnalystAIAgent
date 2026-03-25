@@ -43,6 +43,81 @@ Investigation Request
 
 **Tech Stack:** Python 3.11, LangGraph, DuckDB, pandas, pydantic, Streamlit, plotly, Jinja2
 
+## Sample Investigation Output
+
+Below is a condensed view of actual output produced by the pipeline for **ANO-005** — a simulated credit-card payment gateway outage that caused a 45% order-count drop. The entire report was generated in mock mode with no API keys.
+
+**Executive summary (verbatim from generated report):**
+
+> Evidence suggests the order_count anomaly is primarily driven by changes in 'credit_card' (payment_type). This slice accounts for 112.3% of the total movement. Confidence: high.
+
+**Key evidence — contribution analysis by `payment_type`:**
+
+| Slice | Baseline (daily) | Anomaly (daily) | Change | % Change | Contribution |
+|-------|-------------------|-----------------|--------|----------|-------------|
+| credit_card | 95.71 | 49.75 | -45.96 | -48.0% | 112.3% |
+| apple_pay | 27.00 | 30.50 | +3.50 | +13.0% | -8.6% |
+| debit_card | 48.00 | 49.62 | +1.62 | +3.4% | -4.0% |
+| bank_transfer | 18.79 | 18.62 | -0.16 | -0.9% | 0.4% |
+| paypal | 48.79 | 48.88 | +0.09 | +0.2% | -0.2% |
+
+The `credit_card` slice alone explains >100% of the total decline (other payment types partially offset it), clearly isolating the payment gateway as the root cause.
+
+**Verification checks (all passing):**
+
+| Check | Result | Detail |
+|-------|--------|--------|
+| sql_evidence_exists | Pass | 3 successful SQL queries out of 3 |
+| analysis_results_exist | Pass | 6 analysis results produced |
+| supporting_evidence | Pass | 10 supporting evidence items |
+| concentrated_driver_found | Pass | Concentrated driver found |
+| sample_size_adequate | Pass | All slices have adequate sample sizes |
+
+Each investigation produces a full report with sections for incident context, metric definitions retrieved via BM25, the investigation plan, SQL evidence, contribution tables across all priority dimensions, confidence assessment, and suggested follow-ups. Reports are saved as markdown, HTML, and machine-readable JSON.
+
+## Representative Demo Outputs
+
+Run `make demo` to deterministically generate complete investigation artifacts for three representative anomaly cases. No API keys are needed.
+
+```bash
+make demo
+```
+
+This produces the following in `outputs/demo/`:
+
+```
+outputs/demo/
+  demo_summary.json           ← compact benchmark with case results
+  ANO-001/                    ← conversion_rate drop (channel-driven)
+    report_*.md / .html / .json
+    charts/                   ← 7 interactive Plotly charts
+  ANO-002/                    ← refund_rate spike (category-driven)
+    report_*.md / .html / .json
+    charts/
+  ANO-005/                    ← order_count drop (payment-failure-driven)
+    report_*.md / .html / .json
+    charts/
+```
+
+**Demo summary (from actual `demo_summary.json`):**
+
+| Case | Predicted Primary Cause | Confidence | Review Status |
+|------|------------------------|------------|---------------|
+| ANO-001 | `campaign='none'` dimension, -100.0% change, 778.4% contribution | high | approved |
+| ANO-002 | `category='electronics'`, +183.2% change, 140.0% contribution | high | not_required |
+| ANO-005 | `payment_type='credit_card'`, -48.0% change, 112.3% contribution | high | not_required |
+
+Each case directory contains the full markdown/HTML/JSON report and 7 interactive charts (contribution bar charts per dimension + a time-series overview with highlighted baseline and anomaly windows).
+
+To regenerate from scratch:
+
+```bash
+make seed   # generate synthetic data (deterministic)
+make demo   # run 3 cases, save all artifacts
+```
+
+The outputs are fully deterministic — the same seed and mock LLM produce identical artifacts on every run.
+
 ## Quick Start
 
 ```bash
@@ -54,6 +129,9 @@ make seed
 
 # Run an investigation (mock LLM, no API key needed)
 make run-case CASE_ID=ANO-005
+
+# Generate demo artifacts for 3 representative cases
+make demo
 
 # Launch the Streamlit app
 make app
